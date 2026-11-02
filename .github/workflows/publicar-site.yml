@@ -1,0 +1,113 @@
+# Publica o site de download sempre que um APK novo (ou o próprio site) chega na branch main.
+# Basta subir ArquivosDeTingen-X.Y.Z.apk pela página do GitHub: em um ou dois minutos o site mostra essa versão.
+name: Publicar site
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "*.apk"
+      - "index.template.html"
+      - "assets/**"
+      - ".github/workflows/publicar-site.yml"
+  workflow_dispatch:
+
+# Só o necessário: ler o repositório e publicar no Pages.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Duas subidas seguidas: a mais nova vence, sem publicar pela metade.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  publicar:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - name: Baixar o repositório
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Montar o site com o APK mais novo
+        run: |
+          python3 - <<'PY'
+          import hashlib
+          import html
+          import re
+          import shutil
+          import sys
+          from pathlib import Path
+
+          RAIZ = Path.cwd()
+          SAIDA = RAIZ / "_site"
+          PADRAO = re.compile(r"^ArquivosDeTingen-(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.apk$")
+          LIMITE = 95 * 1024 * 1024  # GitHub recusa arquivos acima de 100 MB
+
+
+          def achar_apk():
+              candidatos = []
+              for arq in RAIZ.iterdir():
+                  m = PADRAO.match(arq.name)
+                  if m and arq.is_file():
+                      candidatos.append((tuple(int(x) for x in m.groups()), arq))
+              if not candidatos:
+                  sys.exit("Nenhum APK no formato ArquivosDeTingen-X.Y.Z.apk na raiz do repositório.")
+              versao, arq = max(candidatos)
+              return arq, ".".join(str(n) for n in versao)
+
+
+          def sha256(arq):
+              h = hashlib.sha256()
+              with arq.open("rb") as f:
+                  for bloco in iter(lambda: f.read(1 << 20), b""):
+                      h.update(bloco)
+              return h.hexdigest()
+
+
+          def tamanho(n):
+              return f"{n / (1024 * 1024):.1f}".replace(".", ",") + " MB"
+
+
+          apk, versao = achar_apk()
+          n = apk.stat().st_size
+          if n > LIMITE:
+              sys.exit(f"{apk.name} tem {tamanho(n)}: grande demais para o GitHub Pages.")
+          with apk.open("rb") as f:
+              if f.read(2) != b"PK":
+                  sys.exit(f"{apk.name} não parece um APK válido.")
+
+          modelo = (RAIZ / "index.template.html").read_text(encoding="utf-8")
+          valores = {"{{APK}}": apk.name, "{{VERSAO}}": versao, "{{TAMANHO}}": tamanho(n), "{{SHA256}}": sha256(apk)}
+          for marca, valor in valores.items():
+              if marca not in modelo:
+                  sys.exit(f"Marcador {marca} sumiu do index.template.html.")
+              modelo = modelo.replace(marca, html.escape(valor, quote=True))
+
+          if SAIDA.exists():
+              shutil.rmtree(SAIDA)
+          SAIDA.mkdir()
+          (SAIDA / "index.html").write_text(modelo, encoding="utf-8")
+          shutil.copytree(RAIZ / "assets", SAIDA / "assets")
+          shutil.copy2(apk, SAIDA / apk.name)
+          (SAIDA / ".nojekyll").write_text("", encoding="utf-8")
+          print(f"Site montado: versão {versao}, {apk.name}, {tamanho(n)}")
+          PY
+
+      - name: Preparar o Pages
+        uses: actions/configure-pages@v5
+
+      - name: Enviar o site
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - name: Publicar
+        id: deploy
+        uses: actions/deploy-pages@v4
