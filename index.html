@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Arquivos de Tingen — jogo de investigação para Android</title>
+<meta name="description" content="Jogo de investigação para Android ambientado no mundo de Lord of the Mysteries. Seis livros, 121 casos, offline e sem coleta de dados.">
+<meta name="theme-color" content="#121016">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self'; style-src 'self' 'unsafe-inline'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+<meta property="og:title" content="Arquivos de Tingen">
+<meta property="og:description" content="Jogo de investigação para Android no mundo de Lord of the Mysteries.">
+<meta property="og:image" content="assets/cena-cripta.webp">
+<style>
+/* Layout: capa com a cripta, botão de download no centro; depois livros, recursos, telas, instalação e segurança. */
+:root {
+  --bg: #121016; --bg2: #1a1720; --card: #201c26; --line: #3a3344;
+  --text: #ebe3d3; --muted: #a2978a; --gold: #d8b46a; --brass: #c9a25a; --wax: #8f2d3a; --ok: #6fbf8a;
+  --serif: 'Palatino Linotype', 'Book Antiqua', Palatino, 'Iowan Old Style', Georgia, serif;
+  --sans: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --mono: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--sans); line-height: 1.55; -webkit-font-smoothing: antialiased; }
+img { max-width: 100%; display: block; }
+a { color: var(--gold); }
+.wrap { max-width: 1060px; margin: 0 auto; padding-left: max(18px, env(safe-area-inset-left)); padding-right: max(18px, env(safe-area-inset-right)); }
+h1, h2, h3 { font-family: var(--serif); font-weight: 600; margin: 0; text-wrap: balance; }
+h2 { font-size: clamp(1.5rem, 4vw, 2.1rem); color: var(--gold); }
+.eyebrow { font-family: var(--serif); letter-spacing: .35em; text-transform: uppercase; color: var(--brass); font-size: .78rem; }
+section { padding-block: 64px; border-top: 1px solid var(--line); }
+.lede { color: var(--muted); max-width: 62ch; }
+
+/* capa */
+.hero { position: relative; min-height: min(92vh, 760px); display: grid; align-items: end; padding-block: 72px 56px; overflow: hidden; border: 0; }
+.hero::before { content: ''; position: absolute; inset: 0; background: url('assets/cena-cripta.webp') center / cover no-repeat; opacity: .75; }
+.hero::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, #12101633 0%, #121016cc 55%, var(--bg) 100%), radial-gradient(ellipse at 30% 40%, transparent 30%, #121016aa 90%); }
+.hero .wrap { position: relative; z-index: 1; display: grid; gap: 18px; }
+.brand { display: flex; align-items: center; gap: 14px; }
+.brand img { width: 64px; height: 64px; border-radius: 14px; box-shadow: 0 6px 24px #000a; }
+.hero h1 { font-size: clamp(2.4rem, 8vw, 4.4rem); line-height: 1; color: var(--gold); text-shadow: 0 4px 24px #000; }
+.hero p { font-size: clamp(1rem, 2.6vw, 1.2rem); max-width: 56ch; margin: 0; }
+.cta { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-top: 8px; }
+.btn { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; font-weight: 700; border-radius: 12px; padding: 14px 22px; border: 1px solid var(--brass); }
+.btn.primary { background: linear-gradient(180deg, #e2c27a, #b88a3a); color: #1c140a; box-shadow: 0 8px 24px #000a, inset 0 1px 0 #fff6; font-size: 1.08rem; }
+.btn.primary:hover { filter: brightness(1.08); }
+.btn.ghost { color: var(--gold); background: #0006; }
+.btn:focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; }
+.btn svg { width: 22px; height: 22px; flex: none; }
+.meta { color: var(--muted); font-size: .88rem; }
+.meta strong { color: var(--text); font-weight: 600; }
+
+/* livros */
+.books { display: grid; grid-template-columns: repeat(auto-fit, minmax(128px, 1fr)); gap: 12px; margin-top: 28px; }
+.book { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px; display: grid; gap: 4px; }
+.book .n { font-family: var(--serif); color: var(--brass); letter-spacing: .25em; font-size: .72rem; text-transform: uppercase; }
+.book h3 { font-size: 1.15rem; color: var(--gold); }
+.book span { color: var(--muted); font-size: .85rem; }
+.book.soon { border-style: dashed; opacity: .7; }
+
+/* recursos */
+.features { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 0 28px; margin-top: 24px; }
+.feature { padding: 16px 0; border-bottom: 1px dashed var(--line); }
+.feature b { font-family: var(--serif); color: var(--gold); font-size: 1.05rem; display: block; margin-bottom: 2px; }
+.feature p { margin: 0; color: var(--muted); font-size: .94rem; }
+
+/* telas */
+.shots { display: flex; gap: 14px; overflow-x: auto; padding: 24px 2px 12px; scroll-snap-type: x mandatory; }
+.shots figure { margin: 0; flex: none; scroll-snap-align: start; }
+.shots img { height: 460px; width: auto; border-radius: 18px; border: 1px solid var(--line); box-shadow: 0 10px 30px #000a; }
+.shots img.wide { height: 230px; }
+.shots figcaption { color: var(--muted); font-size: .82rem; margin-top: 8px; max-width: 260px; }
+@media (max-width: 600px) { .shots img { height: 380px; } .shots img.wide { height: 190px; } }
+
+/* instalar */
+ol.steps { counter-reset: s; list-style: none; padding: 0; margin: 24px 0 0; display: grid; gap: 14px; max-width: 70ch; }
+ol.steps li { counter-increment: s; display: grid; grid-template-columns: 38px 1fr; gap: 12px; align-items: start; }
+ol.steps li::before { content: counter(s); font-family: var(--serif); color: #1c140a; background: var(--gold); width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; }
+ol.steps b { color: var(--text); }
+ol.steps p { margin: 4px 0 0; color: var(--muted); }
+
+/* segurança */
+.trust { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; margin-top: 24px; }
+.trust div { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
+.trust .full { grid-column: 1 / -1; }
+.trust b { color: var(--ok); display: block; margin-bottom: 4px; }
+.trust p { margin: 0; color: var(--muted); font-size: .92rem; }
+.hash { font-family: var(--mono); font-size: .8rem; word-break: break-all; background: #0006; border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; color: var(--text); user-select: all; margin-top: 8px; }
+
+footer { border-top: 1px solid var(--line); padding-block: 32px 48px; color: var(--muted); font-size: .85rem; }
+footer p { max-width: 80ch; margin: 0 0 8px; }
+</style>
+</head>
+<body>
+
+<!--
+  CONFIGURAÇÃO DE CADA VERSÃO NOVA (troque só estas quatro coisas):
+  1. o nome do arquivo do APK nos dois links "Baixar" (href="ArquivosDeTingen-X.Y.Z.apk");
+  2. a versão e o tamanho no texto ao lado do botão;
+  3. o SHA-256 na seção "Seguro e offline" (no PC: certutil -hashfile release\ArquivosDeTingen-X.Y.Z.apk SHA256).
+  O APK fica na raiz do repositório, ao lado deste index.html.
+-->
+
+<header class="hero">
+  <div class="wrap">
+    <div class="brand">
+      <img src="assets/icon.svg" alt="" width="64" height="64">
+      <span class="eyebrow">Um jogo de investigação</span>
+    </div>
+    <h1>Arquivos de Tingen</h1>
+    <p>Você é um investigador dos Nighthawks, da Igreja da Deusa da Noite Eterna. De Tingen a uma Backlund sitiada, viva os acontecimentos de <em>Lord of the Mysteries</em> do lado de quem fica no chão: velas negras, cenas de crime, interrogatórios e a loucura que espreita a cada Sequência.</p>
+    <div class="cta">
+      <a class="btn primary" href="ArquivosDeTingen-3.3.3.apk" download>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 3a1 1 0 0 1 1 1v9.6l3.3-3.3a1 1 0 1 1 1.4 1.4l-5 5a1 1 0 0 1-1.4 0l-5-5a1 1 0 1 1 1.4-1.4l3.3 3.3V4a1 1 0 0 1 1-1zM5 19h14a1 1 0 1 1 0 2H5a1 1 0 1 1 0-2z"/></svg>
+        Baixar para Android
+      </a>
+      <a class="btn ghost" href="#instalar">Como instalar</a>
+    </div>
+    <div class="meta"><strong>Versão 3.3.3</strong> · 24,5 MB · Android 7.0 ou mais novo · gratuito · funciona sem internet</div>
+  </div>
+</header>
+
+<main>
+  <section id="livros">
+    <div class="wrap">
+      <span class="eyebrow">A campanha</span>
+      <h2>Seis livros, 121 casos</h2>
+      <p class="lede">A história acompanha os volumes da obra. Cada livro tem cidade, equipe, mecânicas e até o visual da tela próprios: o jogo muda de cor e de clima enquanto você avança.</p>
+      <div class="books">
+        <div class="book"><span class="n">Livro I</span><h3>Palhaço</h3><span>Tingen · 1349 · 20 casos</span></div>
+        <div class="book"><span class="n">Livro II</span><h3>Sem Rosto</h3><span>Backlund · 1349 · 23 casos</span></div>
+        <div class="book"><span class="n">Livro III</span><h3>Viajante</h3><span>Pritz, o mar e Bayam · 18 casos</span></div>
+        <div class="book"><span class="n">Livro IV</span><h3>Imortal</h3><span>Backlund · 1350 · 18 casos</span></div>
+        <div class="book"><span class="n">Livro V</span><h3>Sacerdote Vermelho</h3><span>Backlund em guerra · 20 casos</span></div>
+        <div class="book"><span class="n">Livro VI</span><h3>Buscador de Luz</h3><span>Backlund sitiada · 22 casos</span></div>
+        <div class="book soon"><span class="n">Livros VII e VIII</span><h3>Em breve</h3><span>O Enforcado e O Louco</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="recursos">
+    <div class="wrap">
+      <span class="eyebrow">O que tem dentro</span>
+      <h2>Investigar, deduzir, sobreviver</h2>
+      <div class="features">
+        <div class="feature"><b>Cenas de busca ilustradas</b><p>Mais de cem cenários pintados, de padarias de cortiço a criptas de catedral, cheios de objetos escondidos.</p></div>
+        <div class="feature"><b>Mural de teorias</b><p>Junte fatos, puxe fios e acuse. Errar a pessoa tem consequência.</p></div>
+        <div class="feature"><b>Interrogatórios</b><p>Pressione, apresente provas, use poderes Beyonder para fazer o suspeito sonhar de olhos abertos.</p></div>
+        <div class="feature"><b>Dez tipos de quebra-cabeça</b><p>Cifras, grades lógicas, gazuas, livros-caixa adulterados, segredos de cofre, contradições em depoimentos.</p></div>
+        <div class="feature"><b>Caminho Beyonder</b><p>Insone ou Coletor de Cadáveres: beba as poções, atue o papel e suba da Sequência 9 à 6.</p></div>
+        <div class="feature"><b>A cidade vive sem você</b><p>Rotina, plantão no Portão de Chanis, conversas de rua, boatos, jornal do dia e a crônica da obra mês a mês.</p></div>
+        <div class="feature"><b>Decisões que voltam</b><p>Dezenas de escolhas morais que reaparecem semanas depois, para o bem ou para o mal.</p></div>
+        <div class="feature"><b>Fome, guerra e cerco</b><p>Toque de recolher, pão e carvão racionados, distritos à beira do motim e noites de bombardeio.</p></div>
+        <div class="feature"><b>Narração em voz</b><p>Um narrador grave lê diálogos e perguntas, com timbre próprio para cada personagem.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="telas">
+    <div class="wrap">
+      <span class="eyebrow">Telas</span>
+      <h2>Como o jogo se parece</h2>
+      <div class="shots" tabindex="0" aria-label="Capturas de tela do jogo">
+        <figure><img src="assets/tela-cortina.webp" alt="Abertura do Livro VI, Buscador de Luz" width="540" height="1169" loading="lazy"><figcaption>A abertura de cada livro.</figcaption></figure>
+        <figure><img src="assets/tela-escritorio.webp" alt="Escritório da diocese com o painel Agora e os atalhos" width="540" height="1169" loading="lazy"><figcaption>O escritório: o que dá para fazer agora.</figcaption></figure>
+        <figure><img class="wide" src="assets/tela-cena.webp" alt="Cena de busca na Padaria Treadgold" width="1200" height="554" loading="lazy"><figcaption>Cena de busca, com o celular deitado.</figcaption></figure>
+        <figure><img src="assets/tela-cidade.webp" alt="Mapa de Backlund com a tensão de cada distrito" width="540" height="1169" loading="lazy"><figcaption>Backlund sitiada, distrito a distrito.</figcaption></figure>
+        <figure><img src="assets/tela-panteao.webp" alt="Dossiê com as cartas dos deuses do panteão" width="540" height="1169" loading="lazy"><figcaption>O dossiê e o panteão.</figcaption></figure>
+      </div>
+    </div>
+  </section>
+
+  <section id="instalar">
+    <div class="wrap">
+      <span class="eyebrow">Passo a passo</span>
+      <h2>Como instalar no Android</h2>
+      <p class="lede">O jogo não está na Play Store: você instala o arquivo direto. Leva um minuto.</p>
+      <ol class="steps">
+        <li><div><b>Baixe o arquivo.</b><p>Toque em "Baixar para Android" no celular. O arquivo termina em <code>.apk</code>.</p></div></li>
+        <li><div><b>Abra o download.</b><p>Pela notificação ou pelo app "Arquivos" / "Downloads".</p></div></li>
+        <li><div><b>Permita a instalação.</b><p>Na primeira vez o Android pede para permitir apps "desta fonte" (o navegador ou o gerenciador de arquivos). Ative e volte.</p></div></li>
+        <li><div><b>Instale e jogue.</b><p>Se o Play Protect avisar que o app é desconhecido, escolha "Instalar mesmo assim": ele só não está na loja.</p></div></li>
+        <li><div><b>Atualizar é igual.</b><p>Baixe a versão nova e instale por cima. O progresso continua salvo.</p></div></li>
+      </ol>
+    </div>
+  </section>
+
+  <section id="seguranca">
+    <div class="wrap">
+      <span class="eyebrow">Seguro e offline</span>
+      <h2>Nada sai do seu celular</h2>
+      <div class="trust">
+        <div><b>Sem internet</b><p>O app não pede permissão de internet. Tudo roda dentro do aparelho.</p></div>
+        <div><b>Sem cadastro e sem coleta</b><p>Não há conta, anúncio, rastreamento nem envio de dados. O progresso fica só no celular.</p></div>
+        <div><b>Assinado</b><p>Todas as versões têm a mesma assinatura, por isso atualizam por cima sem perder o save.</p></div>
+        <div class="full">
+          <b>Confira o arquivo</b>
+          <p>SHA-256 da versão 3.3.3:</p>
+          <div class="hash">81959a112a59ae643acbacd4b19c3222ca188fb993288bcb1a24cd5a3c787a9b</div>
+        </div>
+      </div>
+      <div class="cta" style="margin-top:28px">
+        <a class="btn primary" href="ArquivosDeTingen-3.3.3.apk" download>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 3a1 1 0 0 1 1 1v9.6l3.3-3.3a1 1 0 1 1 1.4 1.4l-5 5a1 1 0 0 1-1.4 0l-5-5a1 1 0 1 1 1.4-1.4l3.3 3.3V4a1 1 0 0 1 1-1zM5 19h14a1 1 0 1 1 0 2H5a1 1 0 1 1 0-2z"/></svg>
+          Baixar a versão 3.3.3
+        </a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <p>Arquivos de Tingen é um projeto de fã, gratuito e sem fins lucrativos. Não tem vínculo com o autor de <em>Lord of the Mysteries</em> nem com os detentores dos direitos da obra; nomes e acontecimentos da série pertencem a eles.</p>
+    <p>Ícones vetoriais de game-icons.net (CC BY 3.0).</p>
+  </div>
+</footer>
+</body>
+</html>
