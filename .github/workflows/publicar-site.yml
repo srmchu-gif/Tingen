@@ -1,5 +1,5 @@
 # Publica o site de download sempre que um APK novo (ou o próprio site) chega na branch main.
-# Basta subir ArquivosDeTingen-X.Y.Z.apk pela página do GitHub: em um ou dois minutos o site mostra essa versão.
+# Basta subir ArquivosDeTingen-X.Y.Z.apk (e o CHANGELOG.md) pela página do GitHub: em um ou dois minutos o site mostra essa versão.
 name: Publicar site
 
 on:
@@ -8,6 +8,7 @@ on:
     paths:
       - "*.apk"
       - "index.template.html"
+      - "CHANGELOG.md"
       - "assets/**"
       - ".github/workflows/publicar-site.yml"
   workflow_dispatch:
@@ -38,6 +39,13 @@ jobs:
       - name: Montar o site com o APK mais novo
         run: |
           python3 - <<'PY'
+          #!/usr/bin/env python3
+          """Monta o site de download em _site/ a partir do APK mais novo do repositório.
+
+          Procura na raiz arquivos no formato ArquivosDeTingen-X.Y.Z.apk, escolhe a maior versão, calcula tamanho e SHA-256,
+          lê o CHANGELOG.md (se existir) e preenche o modelo index.template.html. Só o APK mais novo vai para o site publicado.
+          Sem dependências: só a biblioteca padrão do Python. Todo texto do changelog é escapado (nada de HTML vindo do arquivo).
+          """
           import hashlib
           import html
           import re
@@ -49,9 +57,14 @@ jobs:
           SAIDA = RAIZ / "_site"
           PADRAO = re.compile(r"^ArquivosDeTingen-(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.apk$")
           LIMITE = 95 * 1024 * 1024  # GitHub recusa arquivos acima de 100 MB
+          CABECALHO = re.compile(r"^##\s+(\d{1,3})\.(\d{1,3})\.(\d{1,3})\s*(?:[—–-]\s*(.{0,80}))?$")
+          DATA = re.compile(r"^(\d{4})-(\d{2})-(\d{2})$")
+          ETIQUETAS = {"corrigido": "fix", "novo": "new", "melhorado": "imp"}
+          MAX_VERSOES = 12
+          MAX_ITENS = 40
 
 
-          def achar_apk():
+          def achar_apk() -> tuple[Path, tuple[int, int, int]]:
               candidatos = []
               for arq in RAIZ.iterdir():
                   m = PADRAO.match(arq.name)
@@ -60,10 +73,10 @@ jobs:
               if not candidatos:
                   sys.exit("Nenhum APK no formato ArquivosDeTingen-X.Y.Z.apk na raiz do repositório.")
               versao, arq = max(candidatos)
-              return arq, ".".join(str(n) for n in versao)
+              return arq, versao
 
 
-          def sha256(arq):
+          def sha256(arq: Path) -> str:
               h = hashlib.sha256()
               with arq.open("rb") as f:
                   for bloco in iter(lambda: f.read(1 << 20), b""):
@@ -71,33 +84,105 @@ jobs:
               return h.hexdigest()
 
 
-          def tamanho(n):
-              return f"{n / (1024 * 1024):.1f}".replace(".", ",") + " MB"
+          def tamanho(bytes_: int) -> str:
+              return f"{bytes_ / (1024 * 1024):.1f}".replace(".", ",") + " MB"
 
 
-          apk, versao = achar_apk()
-          n = apk.stat().st_size
-          if n > LIMITE:
-              sys.exit(f"{apk.name} tem {tamanho(n)}: grande demais para o GitHub Pages.")
-          with apk.open("rb") as f:
-              if f.read(2) != b"PK":
-                  sys.exit(f"{apk.name} não parece um APK válido.")
+          def inline(texto: str) -> str:
+              """Escapa tudo e só depois aplica `código`, **negrito** e *itálico*: não há como injetar HTML."""
+              t = html.escape(texto.strip()[:600], quote=True)
+              t = re.sub(r"`([^`]{1,120})`", r"<code>\1</code>", t)
+              t = re.sub(r"\*\*([^*]{1,200})\*\*", r"<strong>\1</strong>", t)
+              t = re.sub(r"\*([^*]{1,200})\*", r"<em>\1</em>", t)
+              return t
 
-          modelo = (RAIZ / "index.template.html").read_text(encoding="utf-8")
-          valores = {"{{APK}}": apk.name, "{{VERSAO}}": versao, "{{TAMANHO}}": tamanho(n), "{{SHA256}}": sha256(apk)}
-          for marca, valor in valores.items():
-              if marca not in modelo:
-                  sys.exit(f"Marcador {marca} sumiu do index.template.html.")
-              modelo = modelo.replace(marca, html.escape(valor, quote=True))
 
-          if SAIDA.exists():
-              shutil.rmtree(SAIDA)
-          SAIDA.mkdir()
-          (SAIDA / "index.html").write_text(modelo, encoding="utf-8")
-          shutil.copytree(RAIZ / "assets", SAIDA / "assets")
-          shutil.copy2(apk, SAIDA / apk.name)
-          (SAIDA / ".nojekyll").write_text("", encoding="utf-8")
-          print(f"Site montado: versão {versao}, {apk.name}, {tamanho(n)}")
+          def ler_changelog(texto: str) -> list[dict]:
+              texto = re.sub(r"<!--.*?-->", "", texto, flags=re.S)
+              versoes: list[dict] = []
+              atual = None
+              for linha in texto.splitlines():
+                  linha = linha.rstrip()
+                  if linha.startswith("## "):
+                      m = CABECALHO.match(linha)
+                      atual = None
+                      if m:
+                          atual = {"versao": tuple(int(x) for x in m.groups()[:3]), "extra": (m.group(4) or "").strip(), "itens": []}
+                          versoes.append(atual)
+                      continue
+                  if atual is not None and linha.lstrip().startswith(("- ", "* ")):
+                      atual["itens"].append(linha.lstrip()[2:].strip())
+              return versoes
+
+
+          def data_br(extra: str) -> str:
+              m = DATA.match(extra)
+              return f"{m.group(3)}/{m.group(2)}/{m.group(1)}" if m else extra
+
+
+          def item_html(texto: str) -> str:
+              m = re.match(r"^(\w+)\s*:\s*(.+)$", texto)
+              if m and m.group(1).lower() in ETIQUETAS:
+                  cls = ETIQUETAS[m.group(1).lower()]
+                  return f'<li><span class="tag {cls}">{html.escape(m.group(1).capitalize())}</span> {inline(m.group(2)[:1].upper() + m.group(2)[1:])}</li>'
+              return f"<li>{inline(texto)}</li>"
+
+
+          def changelog_html(versoes: list[dict], publicada: tuple[int, int, int]) -> str:
+              visiveis = sorted((v for v in versoes if v["versao"] <= publicada and v["itens"]), key=lambda v: v["versao"], reverse=True)
+              if not visiveis:
+                  return '<p class="lede">Sem notas de versão por enquanto.</p>'
+              partes = []
+              for i, v in enumerate(visiveis[:MAX_VERSOES]):
+                  nome = ".".join(map(str, v["versao"]))
+                  quando = data_br(v["extra"])
+                  selo = ' <span class="tag cur">Atual</span>' if v["versao"] == publicada else ""
+                  itens = "".join(item_html(t) for t in v["itens"][:MAX_ITENS])
+                  aberto = " open" if i == 0 else ""
+                  partes.append(
+                      f'<details class="rel"{aberto}><summary><b>Versão {html.escape(nome)}</b>{selo}'
+                      f'<span class="when">{inline(quando)}</span></summary><ul>{itens}</ul></details>'
+                  )
+              return "\n".join(partes)
+
+
+          def main() -> None:
+              apk, versao_t = achar_apk()
+              versao = ".".join(str(n) for n in versao_t)
+              bytes_ = apk.stat().st_size
+              if bytes_ > LIMITE:
+                  sys.exit(f"{apk.name} tem {tamanho(bytes_)}: grande demais para o GitHub Pages.")
+              with apk.open("rb") as f:
+                  if f.read(2) != b"PK":
+                      sys.exit(f"{apk.name} não parece um APK válido.")
+
+              arq_log = RAIZ / "CHANGELOG.md"
+              versoes = ler_changelog(arq_log.read_text(encoding="utf-8")) if arq_log.is_file() else []
+              if not any(v["versao"] == versao_t and v["itens"] for v in versoes):
+                  print(f"::warning::CHANGELOG.md não tem notas da versão {versao}. O site publica assim mesmo.")
+
+              modelo = (RAIZ / "index.template.html").read_text(encoding="utf-8")
+              valores = {"{{APK}}": apk.name, "{{VERSAO}}": versao, "{{TAMANHO}}": tamanho(bytes_), "{{SHA256}}": sha256(apk)}
+              for marca, valor in valores.items():
+                  if marca not in modelo:
+                      sys.exit(f"Marcador {marca} sumiu do index.template.html.")
+                  modelo = modelo.replace(marca, html.escape(valor, quote=True))
+              # já sai escapado de changelog_html; opcional para não quebrar um modelo antigo
+              modelo = modelo.replace("{{CHANGELOG}}", changelog_html(versoes, versao_t))
+
+              if SAIDA.exists():
+                  shutil.rmtree(SAIDA)
+              SAIDA.mkdir()
+              (SAIDA / "index.html").write_text(modelo, encoding="utf-8")
+              shutil.copytree(RAIZ / "assets", SAIDA / "assets")
+              shutil.copy2(apk, SAIDA / apk.name)
+              (SAIDA / ".nojekyll").write_text("", encoding="utf-8")
+
+              print(f"Site montado: versão {versao}, {apk.name}, {tamanho(bytes_)}, SHA-256 {valores['{{SHA256}}']}")
+
+
+          if __name__ == "__main__":
+              main()
           PY
 
       - name: Preparar o Pages
