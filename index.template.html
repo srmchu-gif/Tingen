@@ -93,11 +93,30 @@ ol.steps p { margin: 4px 0 0; color: var(--muted); }
 
 footer { border-top: 1px solid var(--line); padding-block: 32px 48px; color: var(--muted); font-size: .85rem; }
 footer p { max-width: 80ch; margin: 0 0 8px; }
+/* novidades */
+.rels { display: grid; gap: 10px; margin-top: 24px; }
+.rel { background: var(--card); border: 1px solid var(--line); border-radius: 12px; }
+.rel summary { cursor: pointer; list-style: none; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; padding: 14px 16px; }
+.rel summary::-webkit-details-marker { display: none; }
+.rel summary::before { content: '▸'; color: var(--brass); transition: transform .15s; }
+.rel[open] summary::before { transform: rotate(90deg); }
+.rel summary b { font-family: var(--serif); color: var(--gold); font-size: 1.05rem; }
+.rel summary:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; border-radius: 12px; }
+.rel .when { color: var(--muted); font-size: .85rem; margin-left: auto; }
+.rel ul { margin: 0; padding: 0 16px 16px 34px; display: grid; gap: 8px; }
+.rel li { overflow-wrap: anywhere; }
+.rel code { font-family: var(--mono); font-size: .88em; background: #0005; padding: 1px 5px; border-radius: 4px; }
+.tag { display: inline-block; font-size: .7rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; border-radius: 999px; padding: 2px 8px; vertical-align: 1px; border: 1px solid currentColor; }
+.tag.fix { color: var(--ok); }
+.tag.new { color: var(--gold); }
+.tag.imp { color: #8fb4d8; }
+.tag.cur { color: #1c140a; background: var(--gold); border-color: var(--gold); }
+@media (prefers-reduced-motion: reduce) { .rel summary::before { transition: none; } }
 </style>
 </head>
 <body>
 
-<!-- Modelo do site: o GitHub Actions troca os marcadores entre chaves duplas pelos dados do APK mais novo do repositório (.github/workflows/publicar-site.yml). Não apague os marcadores. -->
+<!-- Modelo do site: o GitHub Actions troca os marcadores entre chaves duplas pelos dados do APK mais novo do repositório e pelo CHANGELOG.md (.github/workflows/publicar-site.yml). Não apague os marcadores. -->
 
 <header class="hero">
   <div class="wrap">
@@ -113,6 +132,7 @@ footer p { max-width: 80ch; margin: 0 0 8px; }
         Baixar para Android
       </a>
       <a class="btn ghost" href="#instalar">Como instalar</a>
+      <a class="btn ghost" href="#novidades">Novidades</a>
     </div>
     <div class="meta"><strong>Versão {{VERSAO}}</strong> · {{TAMANHO}} · Android 7.0 ou mais novo · gratuito · funciona sem internet</div>
   </div>
@@ -180,6 +200,17 @@ footer p { max-width: 80ch; margin: 0 0 8px; }
         <li><div><b>Instale e jogue.</b><p>Se o Play Protect avisar que o app é desconhecido, escolha "Instalar mesmo assim": ele só não está na loja.</p></div></li>
         <li><div><b>Atualizar é igual.</b><p>Baixe a versão nova e instale por cima. O progresso continua salvo.</p></div></li>
       </ol>
+    </div>
+  </section>
+
+  <section id="novidades">
+    <div class="wrap">
+      <span class="eyebrow">Notas de versão</span>
+      <h2>O que mudou</h2>
+      <p class="lede">Correções e novidades de cada versão. Para atualizar, baixe e instale por cima: o progresso continua.</p>
+      <div class="rels">
+{{CHANGELOG}}
+      </div>
     </div>
   </section>
 
