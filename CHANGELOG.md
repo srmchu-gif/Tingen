@@ -10,6 +10,14 @@ Como escrever (o site lê este arquivo sozinho):
 
 ## Em andamento
 
+## 3.3.5 — 2026-11-02
+- Corrigido: o botão "Baixar save" não fazia nada no celular (o Android ignorava o download). Agora "Exportar save" abre o menu de compartilhar: dá para salvar em Downloads, no Drive ou mandar pelo WhatsApp.
+- Corrigido: "Baixar registro completo" do relatório de teste tinha o mesmo problema e agora também usa o menu de compartilhar.
+- Corrigido: o botão voltar do Android fechava o jogo no meio de um caso. Agora ele fecha a janela aberta ou volta uma tela; para sair, é preciso tocar duas vezes.
+- Corrigido: "Carregar save" às vezes não deixava escolher o arquivo recebido pelo WhatsApp ou pelo Drive.
+- Novo: o aviso de falha ao salvar ganhou o botão "Enviar o save".
+- Melhorado: o app só compartilha arquivos da própria pasta temporária, nunca do armazenamento do celular.
+
 ## 3.3.4 — 2026-11-02
 - Corrigido: falha ao gravar o progresso (armazenamento cheio, bloqueado ou corrompido) passava em silêncio e o jogador perdia o avanço. Agora o jogo avisa na hora, tenta salvar de novo sozinho e oferece copiar o save.
 - Corrigido: se o save não pudesse ser lido ao abrir o jogo, o primeiro salvamento seguinte podia apagar o progresso antigo. A gravação fica travada até o jogador escolher o que fazer.
